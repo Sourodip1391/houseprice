@@ -26,7 +26,7 @@ def predict():
 
     output = round(prediction[0], 2)
 
-    return render_template('index.html', prediction_text='The predicted house price would be A$ {}'.format(output))
+    return render_template('index.html', prediction_text='The predicted house price would be around A$ {}'.format(output))
 
 
 if __name__ == "__main__":
