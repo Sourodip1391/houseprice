@@ -1,10 +1,4 @@
-#!/usr/bin/env python
-# coding: utf-8
-
-# In[27]:
-
-
-import pandas as pd
+mport pandas as pd
 import numpy as np
 import seaborn as sns
 import matplotlib
@@ -68,7 +62,7 @@ missing.sort_values(inplace=True)
 missing.plot.bar()
 
 
-# In[5]:
+# In[129]:
 
 
 # Filling missing values of Price with median since the distribution is not normal
@@ -79,9 +73,9 @@ house['Longtitude']=house['Longtitude'].fillna(0)
 house['Bathroom']=house['Bathroom'].fillna(house['Bathroom'].median())
 house['Bedroom2']=house['Bedroom2'].fillna(0)
 house['Car']=house['Car'].fillna(0)
-house['Landsize']=house['Landsize'].fillna(0)
+house['Landsize']=house['Landsize'].fillna(house['Landsize'].median())
 house['YearBuilt']=house['YearBuilt'].fillna(0)
-house['BuildingArea']=house['BuildingArea'].fillna(0)
+house['BuildingArea']= house['BuildingArea'].fillna(house['BuildingArea'].median())
 house
 
 
@@ -98,23 +92,7 @@ house.select_dtypes(include=['object']).columns
 house.select_dtypes(include=['int64','float64']).columns
 
 
-# In[39]:
-
-
-# mapping region names
-
-# Abbreviate Regionname categories
-house['Regionname'] = house['Regionname'].map({'Northern Metropolitan':'N Metro',
-                                            'Western Metropolitan':'W Metro', 
-                                            'Southern Metropolitan':'S Metro', 
-                                            'Eastern Metropolitan':'E Metro', 
-                                            'South-Eastern Metropolitan':'SE Metro', 
-                                            'Northern Victoria':'N Vic',
-                                            'Eastern Victoria':'E Vic',
-                                            'Western Victoria':'W Vic'})
-
-
-# In[40]:
+# In[58]:
 
 
 # Suplots of features v price
@@ -128,12 +106,10 @@ axes[0,0].set_ylabel('Price')
 axes[0,0].set_title('Type v Price')
 
 # Plot [1,0]
-sns.boxplot(x = 'Regionname', y = 'Price', data = house, ax = axes[1,0])
+sns.boxplot(x = 'Regionname', y = 'Price', data = house, ax = axes[0,1])
 axes[1,0].set_xlabel('Regionname')
 #axes[1,0].set_ylabel('Price')
 axes[1,0].set_title('Region Name v Price')
-
-
 
 
 # In[10]:
@@ -148,6 +124,33 @@ Suburb.head(10)
 
 
 house[house.columns[1:]].corr()['Price'][:]
+
+
+# In[51]:
+
+
+#select only the data we are interested in
+attributes= ['Price', 'Distance', 'Bathroom', 'Rooms', 'Car', 'Landsize', 'BuildingArea','Lattitude', 'Longtitude', 'Propertycount']
+h= house[attributes]
+
+#whitegrid
+sns.set_style('whitegrid')
+#compute correlation matrix...
+corr_matrix=h.corr(method='spearman')
+#...and show it with a heatmap
+#first define the dimension
+plt.figure(figsize=(20,15))
+
+# Generate a mask for the upper triangle
+mask = np.zeros_like(corr_matrix, dtype=np.bool)
+mask[np.triu_indices_from(mask)] = True
+
+# Generate a custom diverging colormap
+cmap = sns.diverging_palette(220, 10, as_cmap=True)
+
+# Draw the heatmap with the mask and correct aspect ratio
+sns.heatmap(corr_matrix, mask=mask, cmap=cmap, center=0, vmax=1, vmin =-1, annot=True,
+            square=True, linewidths=.5, cbar_kws={"shrink": .5})
 
 
 # In[59]:
@@ -197,13 +200,14 @@ axes[2,1].set_title('BuildingArea v Price')
 plt.show()
 
 
-# In[37]:
+# In[130]:
 
 
 # Split
-# Create features variable 
-features =house[['Rooms','Bathroom', 'Car', 'Price']]
+# Create features variable
 
+features = house[['Rooms','Bathroom','Car','BuildingArea','Price']]
+features
 # Create target variable
 X=features.drop(['Price'],axis=1).values
 y=features['Price'].values
@@ -212,7 +216,7 @@ from sklearn.model_selection import train_test_split
 X_train, X_test, y_train, y_test = train_test_split(X,y, test_size = .20, random_state= 0)
 
 
-# In[36]:
+# In[131]:
 
 
 # Normalizing the variables
@@ -221,37 +225,39 @@ X_train=sc.fit_transform(X_train)
 X_test=sc.fit_transform(X_test)
 
 
-# In[42]:
+# In[132]:
 
 
-#from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LinearRegression
 from sklearn.metrics import accuracy_score
 
 
-# In[44]:
+# In[133]:
 
 
-#model=RandomForestClassifier(n_estimators=300, max_depth=3, random_state=42)
 model=LinearRegression()
 model.fit(X_train,y_train)
 print(model)
 
 
-# In[45]:
+# In[134]:
 
 
 y_pred=model.predict(X_test)
 print(y_pred)
 
 
-# In[49]:
+# In[135]:
 
 
-model.score(X,y)
+from sklearn.metrics import mean_squared_error
+predictions = model.predict(X_train)
+MSE = mean_squared_error(y_train, predictions)
+RMSE = np.sqrt(MSE)
+print('RMSE of the model is', round(RMSE,2))
 
 
-# In[13]:
+# In[136]:
 
 
 import pickle
@@ -259,27 +265,14 @@ import requests
 import json
 
 
-# In[46]:
+# In[137]:
 
 
 pickle.dump(model, open('model.pkl','wb'))
 
 
-# In[47]:
+# In[142]:
 
 
 model = pickle.load(open('model.pkl','rb'))
-print(model.predict([[2,2.5,2]]))
-
-
-# In[34]:
-
-
-house['Price'].isnull().sum()
-
-
-# In[ ]:
-
-
-
-
+print(model.predict([[2,2.5,2,79]]))
